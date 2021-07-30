@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+      crossorigin="anonymous">
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <title>ProductList</title>
+</head>
+<body onload="showAllProduct(),getCategory()">
+<h1>ProductList</h1>
+<div>
+    <button type="button" class="btn btn-primary " data-bs-toggle="modal" data-bs-target="#createProducts">Create New
+        Product
+    </button>
+</div>
+<div id="btn__showList">
+</div>
+
+<!--Modal create-->
+<div class="modal fade" id="createProducts" tabindex="-1" aria-labelledby="exampleModalLabel" onload="getCategory()" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Product</h5>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="email" class="form-control" id="modalCreate__name" aria-describedby="emailHelp">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" >Category</label>
+                    <label>
+                        <select id="modalCreate__category">
+
+<!--                            <option th:each="c:${categories}" th:value="${c.id}" th:text="${c.name}"></option>-->
+                        </select>
+                    </label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Price</label>
+                    <input type="text" class="form-control" id="modalCreate__price">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Quantity</label>
+                    <input type="text" class="form-control" id="modalCreate__quantity">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Color</label>
+                    <input type="text" class="form-control" id="modalCreate__color">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea type="text" class="form-control" id="modalCreate__description"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" onclick="createProduct()" id="createButton" class="btn btn-primary">Create
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // hiển thị list products trong database
+    function showListProduct(data) {
+        return `<tr>
+        <td>${data.name}</td>
+        <td>${data.description}</td>
+        <td>${data.price}</td>
+        <td>${data.quantity}</td>
+        <td>${data.color}</td>
+        <td>${data.category.name}</td>
+        <td><button onclick="edit(this.id)"  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#edit">Edit
+            <button onclick="deleteProduct(${data.id})" type="button" class="btn btn-danger" >Delete
+        </td>
+
+</tr>`
+    }
+
+    function showAllProduct() {
+        // $('#edit').modal('hide');
+        $('#createProducts').modal('hide');
+        // $('#delete').modal('hide');
+        // $('body').removeClass('modal-open');
+        // $('.modal-backdrop').remove();
+        $.ajax({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "GET",
+            url: "/products",
+            success: function (data) {
+                let content = `<table class="table">
+    <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Price</th>
+      <th scope="col">Quantity</th>
+      <th scope="col">Color</th>
+      <th scope="col">Description</th>
+      <th scope="col">Category</th>
+      <th style="width: 250px;">Action</th>
+    </tr>
+     </thead>`;
+                for (let i = 0; i < data.length; i++) {
+                    content += showListProduct(data[i]);
+                }
+                document.getElementById("btn__showList").innerHTML = content;
+            }
+        })
+    }
+
+    function createProduct() {
+        let name = $('#modalCreate__name').val();
+        let price = $('#modalCreate__price').val();
+        let quantity = $('#modalCreate__quantity').val();
+        let color = $('#modalCreate__color').val();
+        let description = $('#modalCreate__description').val();
+        let category = $('#modalCreate__category').val();
+        let newProduct = {
+            name: name,
+            price: price,
+            quantity: quantity,
+            color: color,
+            description: description,
+            category: {
+                id: category,
+            }
+        }
+        $.ajax({
+            url: "/products",
+            type: "POST",
+
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(newProduct),
+            success: function (){
+                showAllProduct();
+                resetForm();
+            },
+        })
+        event.preventDefault();
+        console.log(newProduct)
+    }
+
+    function deleteProduct(id) {
+
+        $.ajax({
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            url: "/products/" + id,
+            type:"DELETE",
+            success:console.log(id),
+            error:showAllProduct
+        })
+        event.preventDefault()
+
+    }
+    function getCategory(){
+        $.ajax({
+            contentType:"application/json; charset=utf-8",
+            dataType:"json",
+            url:"/categories",
+            type:"GET",
+            success: function (data){
+                console.log(data)
+                let content = ``;
+                for (let i = 0; i < data.length; i++) {
+                    content += `<option value=${data[i].id} >${data[i].name} </option>`;
+                }
+                document.getElementById('modalCreate__category').innerHTML= content;
+            }
+
+
+        })
+    }
+
+
+    function editProduct(id){
+
+    }
+    function resetForm(){
+        document.getElementById('modalCreate__name').value=""
+        document.getElementById('modalCreate__price').value=""
+        document.getElementById('modalCreate__quantity').value=""
+        document.getElementById('modalCreate__color').value=""
+        document.getElementById('modalCreate__description').value=""
+        document.getElementById('modalCreate__category').value="1"
+    }
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</body>
+</html>
